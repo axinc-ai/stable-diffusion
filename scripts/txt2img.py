@@ -303,7 +303,7 @@ def main():
                         },
                         verbose=False, opset_version=11
                     )
-                    sys.exit(1)
+                    onnx_export = False
 
                 tic = time.time()
                 all_samples = list()
