@@ -289,6 +289,22 @@ def main():
     with torch.no_grad():
         with precision_scope("cuda"):
             with model.ema_scope():
+                # Export auto encoder
+                onnx_export = True
+                if onnx_export:
+                    model.forward = model.first_stage_model.decode
+                    samples_ddim = torch.from_numpy(np.zeros((2,4,64,64), dtype=np.float32)).type(torch.float16).cuda()
+                    torch.onnx.export(
+                        model, samples_ddim, 'autoencoder.onnx',
+                        input_names=["input"],
+                        output_names=["output"],
+                        dynamic_axes={
+                            'input': {0: 'n', 2: 'h', 3: 'w'}
+                        },
+                        verbose=False, opset_version=11
+                    )
+                    sys.exit(1)
+
                 tic = time.time()
                 all_samples = list()
                 for n in trange(opt.n_iter, desc="Sampling"):

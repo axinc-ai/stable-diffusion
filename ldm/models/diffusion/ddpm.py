@@ -1407,6 +1407,22 @@ class DiffusionWrapper(pl.LightningModule):
             out = self.diffusion_model(xc, t)
         elif self.conditioning_key == 'crossattn':
             cc = torch.cat(c_crossattn, 1)
+
+            # Export diffusion
+            onnx_export = False
+            if onnx_export:
+                from torch.autograd import Variable
+                xx = (Variable(x.type(torch.float16)), Variable(t), Variable(cc))
+                torch.onnx.export(
+                    self.diffusion_model, xx, 'diffusion.onnx',
+                    input_names=["x", "timesteps", "context"],
+                    output_names=["out"],
+                    dynamic_axes={'x': {0:'n', 2:'h',3:'w'}, 'timesteps': {0:'n'}, 'context': {0:'n', 1:'l'}},
+                    verbose=False, opset_version=12
+                )
+                import sys
+                sys.exit(1)
+            
             out = self.diffusion_model(x, t, context=cc)
         elif self.conditioning_key == 'hybrid':
             xc = torch.cat([x] + c_concat, dim=1)
